@@ -6,6 +6,17 @@ A collection of tools and services to facilitate mapping of large gov website
 
 the [epa](https://github.com/edgi-govdata-archiving/epa) repo is now depreciated
 
+## sitemapper.py
+
+crawls a website and produces an xml sitemap.
+
+the domain is obtainable via web service or cli paramater
+
+csv and json versions are created from the xml sitemap
+
+a zip archive is created containing xml, csv and json files
+
+the zip file is uploaded to a cloud server
 
 ## Usage
 
