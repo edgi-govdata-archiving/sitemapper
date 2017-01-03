@@ -2,6 +2,9 @@
 
 A collection of tools and services to facilitate mapping of large gov website
 
+#### Note on depreciated repo
+
+the [epa](https://github.com/edgi-govdata-archiving/epa) repo is now depreciated
 
 
 ## Usage
