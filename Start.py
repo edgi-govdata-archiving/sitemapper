@@ -10,7 +10,7 @@ class Start:
   TODO comments
   """
 
-  def __init__(self, domain, useHttps=False, verbose=True, cli=True):
+  def __init__(self, domain, useHttps, verbose, cli):
     """
     timestamp should be obtained from the redis web service: http://openciti.ca/cgi-bin/jobs
     its used as an identifier so multiple sitemaps may be performed for the same site moving forward
@@ -32,14 +32,15 @@ class Start:
     if cli:
       self.timestamp = str(time.time()).split('.')[0]
       self.reqby = 'cli'
+      self.domain = self.set_domain(domain)
     else:
-      self.timestamp, self.reqby, domain = self.poll()
-    self.domain = self.set_domain(domain)
+      self.timestamp, self.reqby, job = self.poll()
+      self.domain = self.set_domain(job)
 
     upload_file = self.timestamp + '_up.zip'
     self.upload_path = os.path.join(DATA_DIR, upload_file)
 
-    outFromDomain = self.strip_protocol(domain).replace('.', '_')
+    outFromDomain = self.strip_protocol(self.domain).replace('.', '_')
 
     outPrefix = self.timestamp + '_' + outFromDomain
     outFile = outPrefix + '.xml'
@@ -51,8 +52,8 @@ class Start:
     self.outputCsv = os.path.join(DATA_DIR, csvFile)
 
     if verbose:
-      stemplate = '\nxml: {}\ncsv: {}\njson: {}\nzip: {}\n\n'
-      showFileNames = stemplate.format(self.outputXml, self.outputCsv, self.outputJson, self.upload_path)
+      stemplate = '\ndomain: {}\nxml: {}\ncsv: {}\njson: {}\nzip: {}\n\n'
+      showFileNames = stemplate.format(self.domain, self.outputXml, self.outputCsv, self.outputJson, self.upload_path)
       print(showFileNames)
 
     self.file_collection = []
@@ -254,12 +255,13 @@ class Start:
 
 if __name__ == '__main__':
   if len(sys.argv) < 2:
-    sys.stderr.write('Usage: `python3 Start.py domaintomap`\n')
-    sys.exit(2)
-  domain = sys.argv[1]
-
+    cli = False
+    domain = None
+  else:
+    domain = sys.argv[1]
+    cli = True
   verbose = True
-  cli = True
+
   https = False
   if len(sys.argv) == 3 and sys.argv[2].lower(strip) == 'https':
      https = True
