@@ -21,6 +21,7 @@ class SiteMapper:
     self.http = 'http://'
     self.protocol = self.https if useHttps else self.http
 
+    # TODO set this in a config file
     service_root = 'http://openciti.ca/cgi-bin/'
     self.peek = service_root + 'peek'
     self.jobs = service_root + 'jobs'
@@ -59,19 +60,24 @@ class SiteMapper:
     self.file_collection = []
 
 
-
   def strip_protocol(self, url):
+    """
+    strip a url of any protocol
+    include :\\ so it will most likely only strip from the start
+    """
     return url.replace(self.http, '').replace(self.https, '')
 
   def set_domain(self, domain):
-    # ensure the domain has a valid protocol
+    """
+    ensure the domain has a valid protocol
+    """
     if not domain.startswith(self.protocol):
       domain = self.protocol + domain
     return domain.lower().strip()
 
   def rip(self):
     """
-
+    performs the site crawling the produces the xml file
     """
     try:
       exeTemplate = 'python3 python-sitemap/main.py --domain {} --output {}'
