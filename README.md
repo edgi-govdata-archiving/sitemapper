@@ -2,13 +2,15 @@
 
 A collection of tools and services to facilitate mapping of large gov website
 
+
+
 ## Usage
 
 ### CLI mode
 
 `python3 sitemapper.py www.domain.gov`
 
-### POLL mode`
+### POLL mode
 `python3 sitemapper.py`
 
 domain will be obtained from a [webservice](http://openciti.ca/cgi-bin/peek)
@@ -16,6 +18,11 @@ domain will be obtained from a [webservice](http://openciti.ca/cgi-bin/peek)
 ----
 
 ## Submodules
+
+### cloning
+
+use --recursive when cloning into this repo
+
 
 ## python-sitemap
 
