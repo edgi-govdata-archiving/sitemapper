@@ -6,10 +6,10 @@ A collection of tools and services to facilitate mapping of large gov website
 
 ### CLI mode
 
-`python3 Start.py www.domain.gov`
+`python3 sitemapper.py www.domain.gov`
 
-### POLL mode
-`python3 Start.py`
+### POLL mode`
+`python3 sitemapper.py`
 
 domain will be obtained from a [webservice](http://openciti.ca/cgi-bin/peek)
 

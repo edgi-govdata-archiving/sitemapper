@@ -1,6 +1,6 @@
 import sys, os, requests, json, time
 
-class Start:
+class SiteMapper:
   """
   needs to call a web service to confirm upload
   also will unzip the file
@@ -86,17 +86,34 @@ class Start:
 
 
   def zip(self):
+    """
+    compresses files for uploading using the zip utility
+    """
     file_list = ' '.join(self.file_collection)
     zipcmd = 'zip {} {}'.format(self.upload_path, file_list)
     os.system(zipcmd)
 
-    self.file_exists(self.upload_path)
+    return self.file_exists(self.upload_path)
 
   def scp(self):
     """
+    TEMP untill a POST service is worked out
+
     make sure to call zip() first in order to collect the files
     uploads file or files to cloud
     uses a system script along with private AWS credentials
+
+    it must be in a directory on the PATH such as /usr/bin
+
+    e@epc:~/sitemapper$ cat `which scpzip`
+    #!/bin/bash
+    if [ $# -lt 1 ]
+    then
+      exit 2
+    fi
+
+    scp -i "/path/to/creds.pem" $1 aws-id-com:~/public_html/openciti.ca/upload
+
     """
     scpcmd = 'scpzip ' + self.upload_path
     try:
@@ -115,7 +132,9 @@ class Start:
 
   def poll(self):
     """
-    This method will overwrite timestamp,
+    This method will be called if no paramaters are sent on the CLI
+    domain, timestamp and requested by are obtained by a web service instead
+    of being specified by the command line user
     """
     r = requests.get(self.peek)
 
@@ -130,6 +149,9 @@ class Start:
     return ts, reqby, job
 
   def tocsv(self):
+    """
+    converts an xml file to a csv file
+    """
     final = []
     header_line = 'url, lastmod\n'
     with open(self.outputXml, 'r') as f:
@@ -151,9 +173,18 @@ class Start:
 
 
   def getNth(self, listOfLists, n):
+    """
+    input: a list of lists and n
+    returns a list containing of only the nth element of each list
+    """
     return [element[n] for element in listOfLists]
 
   def getNthWithValue(self, listOfLists, n, value):
+    """
+    input: a list of lists, n and value
+    returns a list containing of only the nth element of each list
+    where the nth element is equal to value`
+    """
     return [element for element in listOfLists if element[n] == value]
 
   def toJson(self):
@@ -161,7 +192,7 @@ class Start:
     Just going to produce a nested dict of 'domain', 'sites' and 'leafs'
     'domain' is the main website: http://abc.agency.gov
     'sites' are the first path after the domain
-    'leafs' are object that contain the full url (minus protocol) and last modified timestamp
+    'leafs' are objects that contain the full url (minus protocol) and last modified timestamp
 
     example:
 
@@ -191,6 +222,11 @@ class Start:
       lines = csv.readlines()
       for line in lines:
         url, lastmod = line.split(',')
+
+        # skip header
+        if url.strip().startswith('url'):
+          continue
+
         lastmod = lastmod.strip()
         url = self.strip_protocol(url)
         url = url.lower()
@@ -240,16 +276,19 @@ class Start:
       except:
         continue
 
+      # append leafs
       for tokens in allNth:
         url = '/'.join(tokens)
         lastmod = d[url]['lastmod']
         leaf = {'url': url, 'lastmod': lastmod}
         jsonDict[rootDomain][s].append(leaf)
+
     j = json.dumps(jsonDict)
 
     with open(self.outputJson, 'w') as xml:
       xml.write(j)
     self.file_collection.append(self.outputJson)
+
     if self.verbose:
       print('DONE: ' + self.outputJson)
 
@@ -266,10 +305,13 @@ if __name__ == '__main__':
   if len(sys.argv) == 3 and sys.argv[2].lower(strip) == 'https':
      https = True
 
-  s = Start(domain, https, verbose, cli)
+  s = SiteMapper(domain, https, verbose, cli)
   s.rip()
   s.tocsv()
   s.toJson()
-  s.zip()
-  s.scp()
+  goodzip = s.zip()
+  if not goodzip:
+    print ('\nZIP FAILED. NOT UPLOADING')
+  else:
+    s.scp()
   if verbose: print('\nDONE')
