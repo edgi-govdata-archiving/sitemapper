@@ -1,6 +1,6 @@
 # Site Mapper
 
-A collection of tools and services to facilitate mapping of large gov website
+A collection of tools and services to facilitate mapping of large gov websites
 
 #### Note on depreciated repo
 
