@@ -4,6 +4,3 @@
 [submodule "python-sitemap"]
 	path = python-sitemap
 	url = git@github.com:edgi-govdata-archiving/python-sitemap.git
-[submodule "sitemap-web"]
-	path = sitemap-web
-	url = git@github.com:openciti/sitemap-web.git
