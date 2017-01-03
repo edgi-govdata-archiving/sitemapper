@@ -8,15 +8,15 @@ the [epa](https://github.com/edgi-govdata-archiving/epa) repo is now depreciated
 
 ## sitemapper.py
 
-crawls a website and produces an xml sitemap.
+Crawls a website and produces an xml sitemap
 
-the domain is obtainable via web service or cli paramater
+The domain is obtainable via web service or cli parameter
 
 csv and json versions are created from the xml sitemap
 
-a zip archive is created containing xml, csv and json files
+A zip archive is created containing xml, csv and json files
 
-the zip file is uploaded to a cloud server
+The zip file is uploaded to a cloud server
 
 ## Usage
 
@@ -27,7 +27,7 @@ the zip file is uploaded to a cloud server
 ### POLL mode
 `python3 sitemapper.py`
 
-domain will be obtained from a [webservice](http://openciti.ca/cgi-bin/peek)
+Domain is obtained from a [webservice](http://openciti.ca/cgi-bin/peek)
 
 ----
 
@@ -35,7 +35,7 @@ domain will be obtained from a [webservice](http://openciti.ca/cgi-bin/peek)
 
 ### cloning
 
-use --recursive when cloning into this repo
+Use --recursive when cloning into this repo
 
 
 ## python-sitemap
@@ -49,12 +49,13 @@ Before the fork was made, a pull request to add GPL 3.0 was accepeted by c4softw
 
 ### sitemap-redis
 
-simple cgi to interact with a redis server
+Simple cgi to interact with a redis server
 
-sites can be nominated then pulled and submitted
+Sites can be nominated then pulled and submitted
 
-goal is to facilitate more cost effective off-cloud proccessing
+Goal is to facilitate more cost effective off-cloud proccessing
 
+TODO web interface and user tokens
 
 ### sitemap-web
 
@@ -69,6 +70,8 @@ goal is to facilitate more cost effective off-cloud proccessing
 >serve raw xml, csv or json data
 
 >link to archived data and docs
+
+----
 
 # Licence
 
