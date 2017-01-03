@@ -69,3 +69,7 @@ goal is to facilitate more cost effective off-cloud proccessing
 >serve raw xml, csv or json data
 
 >link to archived data and docs
+
+# Licence
+
+[GPL 3.0](http://www.gnu.org/licenses/gpl.txt)
