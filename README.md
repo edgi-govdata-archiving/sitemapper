@@ -11,7 +11,7 @@ A collection of tools and services to facilitate mapping of large gov website
 ### POLL mode
 `python3 Start.py`
 
-domain will be obtained from a [webservice](openciti.ca/cgi-bin/peek)
+domain will be obtained from a [webservice](http://openciti.ca/cgi-bin/peek)
 
 ----
 
