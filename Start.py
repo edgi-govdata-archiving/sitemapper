@@ -1,12 +1,22 @@
 import sys, os, requests, json, time
 
 class Start:
+  """
+  needs to call a web service to confirm upload
+  also will unzip the file
 
-  def __init__(self, domain, useHttps=False):
+  TODO document CLI and POLL methods
+
+  TODO comments
+  """
+
+  def __init__(self, domain, useHttps=False, verbose=True, cli=True):
     """
     timestamp should be obtained from the redis web service: http://openciti.ca/cgi-bin/jobs
     its used as an identifier so multiple sitemaps may be performed for the same site moving forward
     """
+    self.verbose = verbose
+
     self.https = 'https://'
     self.http = 'http://'
     self.protocol = self.https if useHttps else self.http
@@ -15,10 +25,16 @@ class Start:
     self.peek = service_root + 'peek'
     self.jobs = service_root + 'jobs'
 
+
     DATA_DIR = 'data'
 
     # query web service to get job
-    self.timestamp, self.reqby, domain = self.poll()
+    if cli:
+      self.timestamp = str(time.time()).split('.')[0]
+      self.reqby = 'cli'
+    else:
+      self.timestamp, self.reqby, domain = self.poll()
+    self.domain = self.set_domain(domain)
 
     upload_file = self.timestamp + '_up.zip'
     self.upload_path = os.path.join(DATA_DIR, upload_file)
@@ -30,13 +46,18 @@ class Start:
     jsonFile = outPrefix + '.json'
     csvFile = outPrefix + '.csv'
 
-    self.domain = self.set_domain(domain)
-
     self.outputXml = os.path.join(DATA_DIR, outFile)
     self.outputJson = os.path.join(DATA_DIR, jsonFile)
     self.outputCsv = os.path.join(DATA_DIR, csvFile)
 
+    if verbose:
+      stemplate = '\nxml: {}\ncsv: {}\njson: {}\nzip: {}\n\n'
+      showFileNames = stemplate.format(self.outputXml, self.outputCsv, self.outputJson, self.upload_path)
+      print(showFileNames)
+
     self.file_collection = []
+
+
 
   def strip_protocol(self, url):
     return url.replace(self.http, '').replace(self.https, '')
@@ -56,6 +77,8 @@ class Start:
       cmd = exeTemplate.format(self.domain, self.outputXml)
       os.system(cmd)
       self.file_collection.append(self.outputXml)
+      if self.verbose:
+        print('DONE: ' + self.outputXml)
     except Exception as ex:
       sys.stderr.write(ex)
       sys.exit(2)
@@ -66,14 +89,28 @@ class Start:
     zipcmd = 'zip {} {}'.format(self.upload_path, file_list)
     os.system(zipcmd)
 
+    self.file_exists(self.upload_path)
+
   def scp(self):
     """
     make sure to call zip() first in order to collect the files
     uploads file or files to cloud
     uses a system script along with private AWS credentials
     """
-    scpcmd = 'scpzip ' + self.self.upload_path
-    os.system(scpcmd)
+    scpcmd = 'scpzip ' + self.upload_path
+    try:
+      os.system(scpcmd)
+    except Exception as ex:
+      print('scp fail\n' + ex)
+    #todo get return value by subprocess
+
+
+  def file_exists(self, fn):
+    exists = os.path.isfile(fn)
+    if self.verbose:
+      fout = '{} exists: {}'.format(fn, str(exists))
+      print(fout)
+    return exists
 
   def poll(self):
     """
@@ -87,7 +124,8 @@ class Start:
     ts = rdict['timestamp'].lower().strip()
     reqby = rdict['reqby'].lower().strip()
     job = rdict['job'].lower().strip()
-
+    if self.verbose:
+      print('timereq: {}, reqby: {}, job: {}\n\n'.format(ts, reqby, job))
     return ts, reqby, job
 
   def tocsv(self):
@@ -107,6 +145,8 @@ class Start:
       for line in sorted(final):
         csv.write(line)
     self.file_collection.append(self.outputCsv)
+    if self.verbose:
+      print('DONE: ' + self.outputCsv)
 
 
   def getNth(self, listOfLists, n):
@@ -135,6 +175,7 @@ class Start:
                 "url": "www.epa.gov/aboutepa/about-epas-campus-research-triangle-park-rtp-north-carolina"
             }
             ...
+
     """
     d = {}
     jsonDict = {}
@@ -161,6 +202,10 @@ class Start:
         if slen > maxUrlLen:
           maxUrlLen = slen
 
+        # store root last mod separately TODO
+        if slen == 1:
+          continue
+
         if url not in d:
           d[url] = {}
           d[url]['lastmod'] = lastmod
@@ -182,6 +227,7 @@ class Start:
           jsonDict[domain] = {}
 
     # get list of uniq second keys
+
     seconds = self.getNth(splitUrlsArray, 1)
     secondSet = set(seconds)
     secondList = list(secondSet)
@@ -203,6 +249,8 @@ class Start:
     with open(self.outputJson, 'w') as xml:
       xml.write(j)
     self.file_collection.append(self.outputJson)
+    if self.verbose:
+      print('DONE: ' + self.outputJson)
 
 if __name__ == '__main__':
   if len(sys.argv) < 2:
@@ -210,14 +258,16 @@ if __name__ == '__main__':
     sys.exit(2)
   domain = sys.argv[1]
 
+  verbose = True
+  cli = True
   https = False
   if len(sys.argv) == 3 and sys.argv[2].lower(strip) == 'https':
      https = True
 
-  s = Start(domain, https)
-  result = s.poll()
+  s = Start(domain, https, verbose, cli)
   s.rip()
   s.tocsv()
   s.toJson()
   s.zip()
   s.scp()
+  if verbose: print('\nDONE')
