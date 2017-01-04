@@ -27,7 +27,7 @@ The zip file is uploaded to a cloud server
 ### POLL mode
 `python3 sitemapper.py`
 
-Domain is obtained from a [webservice](http://openciti.ca/cgi-bin/peek)
+Domain is obtained from a [webservice](https://openciti.ca/cgi-bin/archiving/peek)
 
 ----
 
@@ -59,7 +59,7 @@ TODO web interface and user tokens
 
 ### sitemap-web
 
->web views  TODO http://openciti.ca/archiving
+>web views  TODO https://openciti.ca/archiving
 
 >site nomination
 

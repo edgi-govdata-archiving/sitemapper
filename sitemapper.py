@@ -32,6 +32,8 @@ class SiteMapper:
     timestamp should be obtained from the redis web service: http://openciti.ca/cgi-bin/jobs
     its used as an identifier so multiple sitemaps may be performed for the same site moving forward
     """
+    DATA_DIR = 'data'
+    self.file_collection = []
     self.verbose = verbose
 
     self.https = 'https://'
@@ -43,15 +45,12 @@ class SiteMapper:
     self.peek = service_root + 'peek'
     self.jobs = service_root + 'jobs'
 
-
-    DATA_DIR = 'data'
-
-    # query web service to get job
     if cli:
       self.timestamp = str(time.time()).split('.')[0]
       self.reqby = 'cli'
       self.domain = self.set_domain(domain)
     else:
+      # query web service to get job
       self.timestamp, self.reqby, job = self.poll()
       self.domain = self.set_domain(job)
 
@@ -73,9 +72,6 @@ class SiteMapper:
       stemplate = '\ndomain: {}\nxml: {}\ncsv: {}\njson: {}\nzip: {}\n\n'
       showFileNames = stemplate.format(self.domain, self.outputXml, self.outputCsv, self.outputJson, self.upload_path)
       print(showFileNames)
-
-    self.file_collection = []
-
 
   def strip_protocol(self, url):
     """
@@ -112,6 +108,9 @@ class SiteMapper:
     """
     compresses files for uploading using the zip utility
     """
+    if len(self.file_collection) == 0:
+      raise Exception('No Files Found')
+
     file_list = ' '.join(self.file_collection)
     zipcmd = 'zip {} {}'.format(self.upload_path, file_list)
     os.system(zipcmd)
@@ -141,16 +140,15 @@ class SiteMapper:
     scpcmd = 'scpzip ' + self.upload_path
     try:
       os.system(scpcmd)
-    except Exception as ex:
-      print('scp fail\n' + ex)
+    except Exception:
+      raise Exception('scp fail\n' + ex)
     #todo get return value by subprocess
 
-
   def file_exists(self, fn):
+    """
+    leave it up the the caller to raise an exception if not found
+    """
     exists = os.path.isfile(fn)
-    if self.verbose:
-      fout = '{} exists: {}'.format(fn, str(exists))
-      print(fout)
     return exists
 
   def poll(self):
@@ -175,6 +173,11 @@ class SiteMapper:
     """
     converts an xml file to a csv file
     """
+
+    #check to see if the xml file is present
+    if not self.file_exists(self.outputXml):
+      raise FileNotFoundError(self.outputXml)
+
     final = []
     header_line = 'url, lastmod\n'
     with open(self.outputXml, 'r') as f:
@@ -232,19 +235,24 @@ class SiteMapper:
             ...
 
     """
+    #check to see if the csv file is present
+    if not self.file_exists(self.outputCsv):
+      raise FileNotFoundError(self.outputCsv)
+
+    # used for quick lookup of lastmod
     d = {}
+
+    # dict to be rendered to json
     jsonDict = {}
 
     # a list containing a list for each url
     splitUrlsArray = []
 
-    # marks the longest url in terms of path units
-    # ie www.epa.org/abc/def/egc would have a length of 4
-    maxUrlLen = 0
     with open(self.outputCsv, 'r') as csv:
       lines = csv.readlines()
       for line in lines:
-        url, lastmod = line.split(',')
+        # some urls have commas so use rplit,1 to split only the first comma from the RHS
+        url, lastmod = line.rsplit(',', 1)
 
         # skip header
         if url.strip().startswith('url'):
@@ -256,11 +264,6 @@ class SiteMapper:
         url = url.split('?')[0]
 
         spliturl = url.split('/')
-
-        #STORE MAX
-        slen = len(spliturl)
-        if slen > maxUrlLen:
-          maxUrlLen = slen
 
         # store root last mod separately TODO
         if slen == 1:
@@ -275,8 +278,11 @@ class SiteMapper:
     # get unique keys first token ie: domain
     # init as a dict
     first = self.getNth(splitUrlsArray, 0)
+
+    # convert to set and back to list to eliminate duplicates
     firstSet = set(first)
     firstUniq = list(firstSet)
+    
     rootDomain = ''
     if len(firstUniq) == 1:
       rootDomain = firstUniq[0]
@@ -284,13 +290,16 @@ class SiteMapper:
     else:
       for domain in firstUniq:
         if domain not in jsonDict:
+          if verbose: print('second root found: ' + domain)
           jsonDict[domain] = {}
 
     # get list of uniq second keys
-
     seconds = self.getNth(splitUrlsArray, 1)
+
+    # convert to set and back to list to eliminate duplicates
     secondSet = set(seconds)
     secondList = list(secondSet)
+
     for s in secondList:
       jsonDict[rootDomain][s] = []
 
@@ -316,25 +325,47 @@ class SiteMapper:
       print('DONE: ' + self.outputJson)
 
 if __name__ == '__main__':
+  """
+  domain must be first param if sending a domain
+  rip() produces xml
+  tocsv produces csv from xml
+  toJson produces json from csv
+  """
+
+  def has_arg(argList):
+    return [e in sys.argv for e in argList]
+
+  httpsArgs = ['--https', '-h', 'https']
+  verboseArgs = ['--verbose', '-v', 'verbose']
+  csvArgs = ['--csv', '-c', 'csv']
+  jsonArgs = ['--json', '-j', 'json']
+  xmlArgs = ['--xml', '-x', 'xml']
+  upLoadArgs = ['--upload', '-u', 'upload']
+
   if len(sys.argv) < 2:
     cli = False
     domain = None
+    upload = verbose = https = jsn = csv = xml = True
   else:
     domain = sys.argv[1]
     cli = True
-  verbose = True
-
-  https = False
-  if len(sys.argv) == 3 and sys.argv[2].lower(strip) == 'https':
-     https = True
+    https = has_arg(httpsArgs)
+    jsn = has_arg(jsonArgs)
+    verbose = has_arg(verboseArgs)
+    csv = has_arg(csvArgs)
+    xml = has_arg(xmlArgs)
+    upload = has_arg(upLoadArgs)
 
   s = SiteMapper(domain, https, verbose, cli)
-  s.rip()
-  s.tocsv()
-  s.toJson()
-  goodzip = s.zip()
-  if not goodzip:
-    print ('\nZIP FAILED. NOT UPLOADING')
-  else:
-    s.scp()
-  if verbose: print('\nDONE')
+  try:
+    if xml: s.rip()
+    if csv: s.tocsv()
+    if jsn: s.toJson()
+
+    if upload:
+      goodzip = s.zip()
+      if goodzip:
+       s.scp()
+    if verbose: print('\nDONE')
+  except Exception as ex:
+    sys.stderr.write(str(ex))
