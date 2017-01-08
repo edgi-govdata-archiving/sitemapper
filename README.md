@@ -1,75 +1,28 @@
 # Site Mapper
 
-A collection of tools and services to facilitate mapping of large gov websites
-
-#### Note on depreciated repo
-
-the [epa](https://github.com/edgi-govdata-archiving/epa) repo is now depreciated
-
-## sitemapper.py
-
-Crawls a website and produces an xml sitemap
-
-The domain is obtainable via web service or cli parameter
-
-csv and json versions are created from the xml sitemap
-
-A zip archive is created containing xml, csv and json files
-
-The zip file is uploaded to a cloud server
+## SiteMap Data
+(xml, csv and json output)[https://openciti.ca/data]
 
 ## Usage
 
-### CLI mode
+### Generate xml, csv and json
 
 `python3 sitemapper.py www.domain.gov`
 
-### POLL mode
-`python3 sitemapper.py`
+### Generate csv and json 
+`python3 pathtoxmlfile/file.xml -- csv`
+
+### Generate json 
+`python3 pathtocsvfile/file.csv -- json`
+
 
 Domain is obtained from a [webservice](https://openciti.ca/cgi-bin/archiving/peek)
-
-----
-
-## Submodules
-
-### cloning
-
-Use --recursive when cloning into this repo
-
 
 ## python-sitemap
 
 A fork of https://github.com/c4software/python-sitemap
 
-Was forked to preserve the current state of the code
-
 Before the fork was made, a pull request to add GPL 3.0 was accepeted by c4software
-
-
-### sitemap-redis
-
-Simple cgi to interact with a redis server
-
-Sites can be nominated then pulled and submitted
-
-Goal is to facilitate more cost effective off-cloud proccessing
-
-TODO web interface and user tokens
-
-### sitemap-web
-
->web views  TODO https://openciti.ca/archiving
-
->site nomination
-
->view mapping activity
-
->interact with complete site maps
-
->serve raw xml, csv or json data
-
->link to archived data and docs
 
 ----
 

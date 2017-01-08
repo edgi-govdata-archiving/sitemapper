@@ -15,172 +15,53 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 
-import sys, os, requests, json, time
+import sys, os, json, time
 
 class SiteMapper:
-  """
-  needs to call a web service to confirm upload
-  also will unzip the file
-
-  TODO document CLI and POLL methods
-
-  TODO comments
-  """
-
-  def __init__(self, domain, useHttps, verbose, cli):
-    """
-    timestamp should be obtained from the redis web service: http://openciti.ca/cgi-bin/jobs
-    its used as an identifier so multiple sitemaps may be performed for the same site moving forward
-    """
-    DATA_DIR = 'data'
-    self.file_collection = []
-    self.verbose = verbose
-
+  def __init__(self):
+    self.DATA_DIR = 'data'
     self.https = 'https://'
     self.http = 'http://'
-    self.protocol = self.https if useHttps else self.http
-
-    # TODO set this in a config file
-    service_root = 'http://openciti.ca/cgi-bin/'
-    self.peek = service_root + 'peek'
-    self.jobs = service_root + 'jobs'
-
-    if cli:
-      self.timestamp = str(time.time()).split('.')[0]
-      self.reqby = 'cli'
-      self.domain = self.set_domain(domain)
-    else:
-      # query web service to get job
-      self.timestamp, self.reqby, job = self.poll()
-      self.domain = self.set_domain(job)
-
-    upload_file = self.timestamp + '_up.zip'
-    self.upload_path = os.path.join(DATA_DIR, upload_file)
-
-    outFromDomain = self.strip_protocol(self.domain).replace('.', '_')
-
-    outPrefix = self.timestamp + '_' + outFromDomain
-    outFile = outPrefix + '.xml'
-    jsonFile = outPrefix + '.json'
-    csvFile = outPrefix + '.csv'
-
-    self.outputXml = os.path.join(DATA_DIR, outFile)
-    self.outputJson = os.path.join(DATA_DIR, jsonFile)
-    self.outputCsv = os.path.join(DATA_DIR, csvFile)
-
-    if verbose:
-      stemplate = '\ndomain: {}\nxml: {}\ncsv: {}\njson: {}\nzip: {}\n\n'
-      showFileNames = stemplate.format(self.domain, self.outputXml, self.outputCsv, self.outputJson, self.upload_path)
-      print(showFileNames)
+    self.protocol = self.http
 
   def strip_protocol(self, url):
-    """
-    strip a url of any protocol
-    include :\\ so it will most likely only strip from the start
-    """
     return url.replace(self.http, '').replace(self.https, '')
 
   def set_domain(self, domain):
-    """
-    ensure the domain has a valid protocol
-    """
     if not domain.startswith(self.protocol):
       domain = self.protocol + domain
     return domain.lower().strip()
 
-  def rip(self):
-    """
-    performs the site crawling the produces the xml file
-    """
+  def rip(self, domain):
+    timestamp = str(time.time()).split('.')[0]
+    domain = self.set_domain(domain)
+    outFromDomain = self.strip_protocol(domain).replace('.', '_')
+    outFile = '{}_{}.xml'.format(timestamp, outFromDomain)
+    outputXml = os.path.join(self.DATA_DIR, outFile)
+
     try:
       exeTemplate = 'python3 python-sitemap/main.py --domain {} --output {}'
-      cmd = exeTemplate.format(self.domain, self.outputXml)
+      cmd = exeTemplate.format(domain, outputXml)
       os.system(cmd)
-      self.file_collection.append(self.outputXml)
-      if self.verbose:
-        print('DONE: ' + self.outputXml)
+
     except Exception as ex:
       sys.stderr.write(ex)
       sys.exit(2)
 
-
-  def zip(self):
-    """
-    compresses files for uploading using the zip utility
-    """
-    if len(self.file_collection) == 0:
-      raise Exception('No Files Found')
-
-    file_list = ' '.join(self.file_collection)
-    zipcmd = 'zip {} {}'.format(self.upload_path, file_list)
-    os.system(zipcmd)
-
-    return self.file_exists(self.upload_path)
-
-  def scp(self):
-    """
-    TEMP untill a POST service is worked out
-
-    make sure to call zip() first in order to collect the files
-    uploads file or files to cloud
-    uses a system script along with private AWS credentials
-
-    it must be in a directory on the PATH such as /usr/bin
-
-    e@epc:~/sitemapper$ cat `which scpzip`
-    #!/bin/bash
-    if [ $# -lt 1 ]
-    then
-      exit 2
-    fi
-
-    scp -i "/path/to/creds.pem" $1 aws-id-com:~/public_html/openciti.ca/upload
-
-    """
-    scpcmd = 'scpzip ' + self.upload_path
-    try:
-      os.system(scpcmd)
-    except Exception:
-      raise Exception('scp fail\n' + ex)
-    #todo get return value by subprocess
-
   def file_exists(self, fn):
-    """
-    leave it up the the caller to raise an exception if not found
-    """
     exists = os.path.isfile(fn)
     return exists
 
-  def poll(self):
-    """
-    This method will be called if no paramaters are sent on the CLI
-    domain, timestamp and requested by are obtained by a web service instead
-    of being specified by the command line user
-    """
-    r = requests.get(self.peek)
-
-    # convert to dict
-    rdict = json.loads(r.text)
-
-    ts = rdict['timestamp'].lower().strip()
-    reqby = rdict['reqby'].lower().strip()
-    job = rdict['job'].lower().strip()
-    if self.verbose:
-      print('timereq: {}, reqby: {}, job: {}\n\n'.format(ts, reqby, job))
-    return ts, reqby, job
-
-  def tocsv(self):
-    """
-    converts an xml file to a csv file
-    """
-
-    #check to see if the xml file is present
-    if not self.file_exists(self.outputXml):
-      raise FileNotFoundError(self.outputXml)
+  def tocsv(self, xmlFile):
+    if not self.file_exists(xmlFile):
+      raise FileNotFoundError(xmlFile)
+    
+    outputCsv = xmlFile.replace('.xml', 'csv')
 
     final = []
     header_line = 'url, lastmod\n'
-    with open(self.outputXml, 'r') as f:
+    
+    with open(xmlFile, 'r') as f:
       lines = f.readlines()
       for line in lines:
         if (line.startswith("<url>")):
@@ -189,14 +70,12 @@ class SiteMapper:
           clean = clean.replace("</lastmod></url>", "")
           final.append(clean)
 
-    with open(self.outputCsv, 'w') as csv:
+    with open(outputCsv, 'w') as csv:
       csv.write(header_line)
       for line in sorted(final):
         csv.write(line)
-    self.file_collection.append(self.outputCsv)
-    if self.verbose:
-      print('DONE: ' + self.outputCsv)
 
+    return outputCsv
 
   def getNth(self, listOfLists, n):
     """
@@ -213,7 +92,7 @@ class SiteMapper:
     """
     return [element for element in listOfLists if element[n] == value]
 
-  def toJson(self):
+  def tojson(self, csvFile):
     """
     Just going to produce a nested dict of 'domain', 'sites' and 'leafs'
     'domain' is the main website: http://abc.agency.gov
@@ -236,9 +115,10 @@ class SiteMapper:
 
     """
     #check to see if the csv file is present
-    if not self.file_exists(self.outputCsv):
-      raise FileNotFoundError(self.outputCsv)
+    if not self.file_exists(csvFile):
+      raise FileNotFoundError(csvFile)
 
+    jsonFile = csvFile.replace('.csv', '.json')
     # used for quick lookup of lastmod
     d = {}
 
@@ -248,7 +128,7 @@ class SiteMapper:
     # a list containing a list for each url
     splitUrlsArray = []
 
-    with open(self.outputCsv, 'r') as csv:
+    with open(csvFile, 'r') as csv:
       lines = csv.readlines()
       for line in lines:
         # some urls have commas so use rplit,1 to split only the first comma from the RHS
@@ -264,7 +144,7 @@ class SiteMapper:
         url = url.split('?')[0]
 
         spliturl = url.split('/')
-
+        slen = len(spliturl)
         # store root last mod separately TODO
         if slen == 1:
           continue
@@ -290,7 +170,6 @@ class SiteMapper:
     else:
       for domain in firstUniq:
         if domain not in jsonDict:
-          if verbose: print('second root found: ' + domain)
           jsonDict[domain] = {}
 
     # get list of uniq second keys
@@ -317,55 +196,38 @@ class SiteMapper:
 
     j = json.dumps(jsonDict)
 
-    with open(self.outputJson, 'w') as xml:
+    with open(jsonFile, 'w') as xml:
       xml.write(j)
-    self.file_collection.append(self.outputJson)
-
-    if self.verbose:
-      print('DONE: ' + self.outputJson)
 
 if __name__ == '__main__':
   """
-  domain must be first param if sending a domain
-  rip() produces xml
-  tocsv produces csv from xml
-  toJson produces json from csv
+  sending a domain alone will produce, xml, csv and json
+
+  xml generation sometimes does not terminate, so run the csv and json options manually
+
+  send an xml filename followed by --csv converts it to csv and json
+  send a csv filename followed by --json converts it to json
   """
 
   def has_arg(argList):
     return [e in sys.argv for e in argList]
 
-  httpsArgs = ['--https', '-h', 'https']
-  verboseArgs = ['--verbose', '-v', 'verbose']
-  csvArgs = ['--csv', '-c', 'csv']
-  jsonArgs = ['--json', '-j', 'json']
-  xmlArgs = ['--xml', '-x', 'xml']
-  upLoadArgs = ['--upload', '-u', 'upload']
+  csvArgs = ['--csv', '-c']
+  jsonArgs = ['--json', '-j']
+  
+  domainOrFile = sys.argv[1]
 
-  if len(sys.argv) < 2:
-    cli = False
-    domain = None
-    upload = verbose = https = jsn = csv = xml = True
+  jsn =  True in has_arg(jsonArgs)
+  csv =  True in has_arg(csvArgs)
+  
+  s = SiteMapper()
+
+  if csv:
+    csvFile = s.tocsv(domainOrFile)
+    s.tojson(csvFile)
+  elif jsn:
+    s.tojson(domainOrFile)
   else:
-    domain = sys.argv[1]
-    cli = True
-    https = has_arg(httpsArgs)
-    jsn = has_arg(jsonArgs)
-    verbose = has_arg(verboseArgs)
-    csv = has_arg(csvArgs)
-    xml = has_arg(xmlArgs)
-    upload = has_arg(upLoadArgs)
-
-  s = SiteMapper(domain, https, verbose, cli)
-  try:
-    if xml: s.rip()
-    if csv: s.tocsv()
-    if jsn: s.toJson()
-
-    if upload:
-      goodzip = s.zip()
-      if goodzip:
-       s.scp()
-    if verbose: print('\nDONE')
-  except Exception as ex:
-    sys.stderr.write(str(ex))
+    xmlfile = s.rip(domainOrFile)
+    csvfile = s.tocsv(xmlfile)
+    s.tojson(csvfile)
