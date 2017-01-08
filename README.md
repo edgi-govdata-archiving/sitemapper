@@ -15,9 +15,6 @@
 ### Generate json 
 `python3 pathtocsvfile/file.csv -- json`
 
-
-Domain is obtained from a [webservice](https://openciti.ca/cgi-bin/archiving/peek)
-
 ## python-sitemap
 
 A fork of https://github.com/c4software/python-sitemap
