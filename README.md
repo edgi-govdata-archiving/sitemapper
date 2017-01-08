@@ -3,6 +3,12 @@
 ## SiteMap Data
 [xml, csv and json output](https://openciti.ca/data)
 
+## json viewers
+
+### [Firefox](https://www.google.ca/url?sa=t&rct=j&q=&esrc=s&source=web&cd=1&cad=rja&uact=8&ved=0ahUKEwjk6oHC07PRAhVG4oMKHRDdBOoQFggcMAA&url=https%3A%2F%2Faddons.mozilla.org%2Fen-us%2Ffirefox%2Faddon%2Fjsonview%2F&usg=AFQjCNFnutZMnUPkykePxkREckXfDY1Xtg&sig2=xaRijwrrCdniT0tM5U9jBg)
+
+### [Chrome](https://chrome.google.com/webstore/detail/json-viewer/gbmdgpbipfallnflgajpaliibnhdgobh)
+
 ## Usage
 
 ### Generate xml, csv and json
