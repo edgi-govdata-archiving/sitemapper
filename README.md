@@ -1,7 +1,7 @@
 # Site Mapper
 
 ## SiteMap Data
-(xml, csv and json output)[https://openciti.ca/data]
+[xml, csv and json output](https://openciti.ca/data)
 
 ## Usage
 
