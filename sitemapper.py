@@ -56,7 +56,7 @@ class SiteMapper:
     if not self.file_exists(xmlFile):
       raise FileNotFoundError(xmlFile)
     
-    outputCsv = xmlFile.replace('.xml', 'csv')
+    outputCsv = xmlFile.replace('.xml', '.csv')
 
     final = []
     header_line = 'url, lastmod\n'
