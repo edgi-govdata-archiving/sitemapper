@@ -11,19 +11,22 @@
 
 ## Usage
 
-### Generate xml, csv and json
+
+### Generate xml, csv and json from a url
 
 `python3 sitemapper.py www.domain.gov`
 
-### Generate csv and json 
+since the above command may take too long to terminate, you can stop the script and proceed with the xml file that has been generated as illustrated below
+
+### Generate csv and json from an xml source
 `python3 pathtoxmlfile/file.xml -- csv`
 
-### Generate json 
+### Generate json from a csv source
 `python3 pathtocsvfile/file.csv -- json`
 
-## python-sitemap
+## Fork python-sitemap
 
-A fork of https://github.com/c4software/python-sitemap
+The web crawler was forked from https://github.com/c4software/python-sitemap
 
 Before the fork was made, a pull request to add GPL 3.0 was accepeted by c4software
 
